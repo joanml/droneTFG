@@ -1,5 +1,6 @@
 package logica;
 
+import java.awt.font.NumericShaper;
 import java.awt.geom.Point2D;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -10,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.mavlink.IMAVLinkMessage;
@@ -18,7 +20,9 @@ import org.mavlink.messages.IMAVLinkMessageID;
 import org.mavlink.messages.MAVLinkMessage;
 import org.mavlink.messages.ardupilotmega.msg_attitude;
 import org.mavlink.messages.ardupilotmega.msg_global_position_int;
+import org.mavlink.messages.ardupilotmega.msg_rc_channels_raw;
 import org.mavlink.messages.ardupilotmega.msg_scaled_pressure;
+import org.mavlink.messages.ardupilotmega.msg_servo_output_raw;
 
 import api.GUIHelper;
 import api.pojo.UTMCoordinates;
@@ -50,6 +54,8 @@ public class Listener extends Thread {
 	OutputStream out;
 
 	// Sigue el número de paquetes que llegan de cada tipo
+	long munServo = 0;
+	long munRCChanels = 0;
 	long numPosition = 0;
 	long numAttitude = 0;
 	long numPressure = 0;
@@ -118,41 +124,14 @@ public class Listener extends Thread {
 	public void run() {
 		continuar = true;
 
-		while (true) {
-			
-/*		
-  	  		try {
-  				// Versión por puerto serie
-				//   No requiere convertir el inputStream en DataInputStream
-				//   Al no estar orientado a paquetes no hay que crear un reader cada vez
-				
-				// Versión por UDP
-				if (!Main.interfaceIsSerial) {
-					// Lectura de información por UDP
-					buffer = new byte[MainWindow.DGRAM_MAX_LENGTH];
-					paquete = new DatagramPacket(buffer, buffer.length);
-					socketListener.receive(paquete);
-					if (din != null)
-						din.close(); // Cierre en cada ciclo
-					if (bin != null)
-						bin.close();
-					bin = new ByteArrayInputStream(paquete.getData());
-					din = new DataInputStream(bin);
-					reader = new MAVLinkReader(din, IMAVLinkMessage.MAVPROT_PACKET_START_V10);
-				}
-				
-				// Si interesa el tipo de mensaje se guarda la información que interesa
-				selectMessage();
-				
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			*/
-			  	
+		dron.abrirEscritura(Text.FILE_LOGS_MSG);
+		
+		while (continuar) {	
+		 //////////////////// 	jg
 			selectMessage();
+			if(munRCChanels>200)continuar=false;
 		}
-
+		dron.cerrarBuffer();
 		// Cierre de inputstreams en puertos serie
 		// No lo hago porque se captura indefinidamente hasta que se cierra el programa
 
@@ -169,15 +148,25 @@ public class Listener extends Thread {
 			
 			if (msg != null) {
 				switch (msg.messageType) {
+/*					case IMAVLinkMessageID.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
+						munServo++;
+						registraServoOutPut((msg_servo_output_raw) msg);
+						printServoOutPutRaw();
+						break;
+*/					case IMAVLinkMessageID.MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+						munRCChanels++;
+						registraRcChanelsRaw((msg_rc_channels_raw) msg);
+						printRcChanelsRaw();
+						break; 
 					case IMAVLinkMessageID.MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
 						numPosition++;
 						registraPosicionGlobal((msg_global_position_int) msg);
 						printPosicionGlobal();
 						break;
-					case IMAVLinkMessageID.MAVLINK_MSG_ID_ATTITUDE:
-						numAttitude++;
-						registraPostura((msg_attitude) msg);
-						break;
+//					case IMAVLinkMessageID.MAVLINK_MSG_ID_ATTITUDE:
+//						numAttitude++;
+//						registraPostura((msg_attitude) msg);
+//						break;
 //					case IMAVLinkMessageID.MAVLINK_MSG_ID_SCALED_PRESSURE:
 //						numPressure++;
 //						registraTemperatura((msg_scaled_pressure) msg);
@@ -191,6 +180,8 @@ public class Listener extends Thread {
 //						registraBateria((msg_sys_status) msg);
 //						break;
 				}
+				dron.escribirBuffer();
+				
 			}
 		} catch (IOException e) {
 			System.out.println("Fallo al leer el mensaje:\n" + e.getMessage());
@@ -198,7 +189,7 @@ public class Listener extends Thread {
 	}
 
 	private void printPosicionGlobal() {
-		System.out.println(dron.getGeoLocation());
+		System.out.println("Z: "+dron.getZ()+"\tZRelat: "+dron.getZRelative());
 	}
 
 	private void registraPosicionGlobal(msg_global_position_int mensaje) {
@@ -217,11 +208,46 @@ public class Listener extends Thread {
 
 		
 		dron.update(time, locationGeo, locationUTM, z, mensaje.relative_alt * 0.001, speed, heading);
-		System.out.println("Actualizado: "+time);
+		//System.out.println("Actualizado: "+time);
 
 	}
 
-	private void registraPostura(msg_attitude mensaje) {
-		//mensaje
+	private void printServoOutPutRaw() {
+		int servo[] = dron.getServo();
+		for (int i = 0; i<servo.length;i++) {
+        	System.out.print("\tS"+(i+1)+": "+servo[i]+", ");
+		}
+		System.out.println();
+	}
+		
+	private void registraServoOutPut(msg_servo_output_raw mensaje) {
+		int servo[] = {
+				mensaje.servo1_raw,
+				mensaje.servo2_raw,
+				mensaje.servo3_raw,
+				mensaje.servo4_raw,
+				mensaje.servo5_raw,
+				mensaje.servo6_raw
+		};
+		dron.setServo(servo);
+	}
+	
+
+	private void printRcChanelsRaw() {
+		int channel[] = dron.getChannel();
+		for (int i = 0; i<channel.length;i++) {
+        	System.out.print("\tCh"+(i+1)+": "+channel[i]+", ");
+		}
+		System.out.println();
+	}
+
+	private void registraRcChanelsRaw(msg_rc_channels_raw mensaje) {
+		int channel[] = {
+				mensaje.chan1_raw,
+				mensaje.chan2_raw,
+				mensaje.chan3_raw,
+				mensaje.chan4_raw
+		};
+		dron.setChannel(channel);
 	}
 }
