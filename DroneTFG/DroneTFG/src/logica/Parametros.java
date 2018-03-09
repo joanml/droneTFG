@@ -1,10 +1,8 @@
 package logica;
 
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import org.mavlink.messages.MAV_MODE_FLAG;
-
-import uavController.UAVParam;
-
-
 
 
 public class Parametros {
@@ -18,8 +16,7 @@ public class Parametros {
 		public enum Status {
 			START(0),
 			ON(1),
-			END(2),
-			SHUTDOWN(3);
+			END(2);
 			
 			private final int id;
 			private Status(int id) {
@@ -29,7 +26,11 @@ public class Parametros {
 				return this.id;
 			}
 		}
-		public static volatile Mode modoVuelo;
+		
+		
+		//public static AtomicReferenceArray<Mode> flightMode; // Current flight mode
+		public static Mode flightMode;
+		
 		// Ardupilot flight modes
 		public enum Mode {
 
@@ -186,13 +187,16 @@ public class Parametros {
 			/**
 			 * Return the ardupilot flight mode corresponding to the base and custom values.
 			 * <p>If no valid flight mode is found, it returns null. */
-//			public static UAVParam.Mode getMode(int base, long custom) {
-//				for (Mode p : Mode.values()) {
-//					if (p.baseMode == base && p.customMode == custom) {
-//						return p;
-//					}
-//				}
-//				return null;
-//			}
+			public static Mode getMode(int base, long custom) {
+				for (Mode p : Mode.values()) {
+					if (p.baseMode == base && p.customMode == custom) {
+						return p;
+					}
+				}
+				return null;
+			}
 		}
+
+		
+		
 }
