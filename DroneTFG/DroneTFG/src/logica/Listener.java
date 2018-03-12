@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Calendar;
 import java.util.Properties;
 
 import org.mavlink.IMAVLinkMessage;
@@ -94,7 +95,7 @@ public class Listener extends Thread {
 			portIdentifier = CommPortIdentifier.getPortIdentifier(Main.serialPort);
 
 			if (portIdentifier.isCurrentlyOwned()) {
-				System.out.println("Error: Port is currently in use");
+				//System.out.println("Error: Port is currently in use");
 			} else {
 				int timeout = 2000;
 				CommPort commPort;
@@ -121,7 +122,7 @@ public class Listener extends Thread {
 						}
 
 					} else {
-						System.out.println("Error: It only works with serial ports");
+						//System.out.println("Error: It only works with serial ports");
 					}
 				} catch (PortInUseException e1) {
 					// TODO Auto-generated catch block
@@ -138,12 +139,20 @@ public class Listener extends Thread {
 	@Override
 	public void run() {
 		
+		
+		
 		Parametros.simStatus = Status.START;
-
-		abrirEscritura(Text.FILE_LOGS_MSG);
+		//System.out.println("Statuts: "+Parametros.simStatus);
+		Calendar c = Calendar.getInstance();
+		abrirEscritura(c.get(Calendar.YEAR) + "-"
+				+ c.get(Calendar.MONTH) + "-" + c.get(Calendar.DAY_OF_MONTH)
+				+ "-" + c.get(Calendar.HOUR_OF_DAY) + "-" + c.get(Calendar.MINUTE)
+				+ "-" + c.get(Calendar.SECOND) + Text.FILE_LOGS_MSG);
 		
 		while (true) {
 			if (testStarted && Parametros.simStatus == Status.END) {
+				//System.out.println("Statuts: "+Parametros.simStatus);
+				//System.out.println("Cerrando buffer");
 				cerrarBuffer();
 				return;
 			}
@@ -184,7 +193,7 @@ public class Listener extends Thread {
 					
 				}
 			} catch (IOException e) {
-				System.out.println("Fallo al leer el mensaje:\n" + e.getMessage());
+				//System.out.println("Fallo al leer el mensaje:\n" + e.getMessage());
 			}
 //			if(munRCChanels>200)continuar=false;
 			
@@ -195,6 +204,8 @@ public class Listener extends Thread {
 //		dron.cerrarBuffer();
 		// Cierre de inputstreams en puertos serie
 		// No lo hago porque se captura indefinidamente hasta que se cierra el programa
+		
+		
 
 	}
 
@@ -210,7 +221,7 @@ public class Listener extends Thread {
 			+  "," + Listener.round(z, 3) + "," + Listener.round(zRel, 3) + "," + Listener.round(speed, 3)
 			+ "," + heading;
 		
-		System.out.println(res);
+		//System.out.println(res);
 		if (bfwriter != null) {
 			try {
 				bfwriter.write(res);
@@ -267,7 +278,7 @@ public class Listener extends Thread {
 		
 		String res = "1," + time + "," + mensaje.chan1_raw + "," + mensaje.chan2_raw + "," + mensaje.chan3_raw + "," + mensaje.chan4_raw;
 	
-		System.out.println(res);
+		//System.out.println(res);
 		if (bfwriter != null) {
 			try {
 				bfwriter.write(res);
@@ -289,13 +300,16 @@ public class Listener extends Thread {
 //	}
 	
 	private void processMode(msg_heartbeat msg) {
+		//System.out.println(Parametros.simStatus.name() + "-" + msg.base_mode);
 		if (Parametros.simStatus == Status.START && msg.base_mode > Parametros.MIN_MODE_TO_BE_FLYING) {
 			Parametros.simStatus = Status.ON;
+			//System.out.println("Statuts: "+Parametros.simStatus);
 			testStarted = true;
 		}
 		
 		if (Parametros.simStatus == Status.ON && msg.base_mode < Parametros.MIN_MODE_TO_BE_FLYING) {
 			Parametros.simStatus = Status.END;
+			//System.out.println("Statuts: "+Parametros.simStatus);
 		}
 		
 		
