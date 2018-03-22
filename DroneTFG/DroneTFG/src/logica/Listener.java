@@ -1,7 +1,5 @@
 package logica;
 
-import java.awt.font.NumericShaper;
-import java.awt.geom.Point2D;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -16,7 +14,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Calendar;
@@ -26,12 +23,9 @@ import org.mavlink.IMAVLinkMessage;
 import org.mavlink.MAVLinkReader;
 import org.mavlink.messages.IMAVLinkMessageID;
 import org.mavlink.messages.MAVLinkMessage;
-import org.mavlink.messages.ardupilotmega.msg_attitude;
 import org.mavlink.messages.ardupilotmega.msg_global_position_int;
 import org.mavlink.messages.ardupilotmega.msg_heartbeat;
 import org.mavlink.messages.ardupilotmega.msg_rc_channels_raw;
-import org.mavlink.messages.ardupilotmega.msg_scaled_pressure;
-import org.mavlink.messages.ardupilotmega.msg_servo_output_raw;
 
 import api.GUIHelper;
 import api.pojo.UTMCoordinates;
@@ -42,8 +36,6 @@ import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
 import logica.Parametros.Status;
-import sim.logic.SimParam;
-import uavController.UAVParam;
 
 public class Listener extends Thread {
 
@@ -232,47 +224,6 @@ public class Listener extends Thread {
 		}
 	}
 
-//	private void registraPosicionGlobal(msg_global_position_int mensaje) {
-//		Point2D.Double locationUTM = new Point2D.Double();
-//		Point2D.Double locationGeo = new Point2D.Double(mensaje.lon * 0.0000001, mensaje.lat * 0.0000001);
-//		UTMCoordinates locationUTMauxiliary = GUIHelper.geoToUTM(locationGeo.y, locationGeo.x);
-//		if (SimParam.zone < 0) {
-//			SimParam.zone = locationUTMauxiliary.Zone;
-//			SimParam.letter = locationUTMauxiliary.Letter;
-//		}
-//		locationUTM.setLocation(locationUTMauxiliary.Easting, locationUTMauxiliary.Northing);
-//		long time = System.nanoTime();
-//		double z = mensaje.alt * 0.001;
-//		double heading = (mensaje.hdg * 0.01) * Math.PI / 180;
-//		double speed = Math.sqrt(Math.pow(mensaje.vx * 0.01, 2) + Math.pow(mensaje.vy * 0.01, 2));
-//
-//		
-//		dron.update(time, locationGeo, locationUTM, z, mensaje.relative_alt * 0.001, speed, heading);
-//		//System.out.println("Actualizado: "+time);
-//
-//	}
-
-//	private void printServoOutPutRaw() {
-//		int servo[] = dron.getServo();
-//		for (int i = 0; i<servo.length;i++) {
-//        	System.out.print("\tS"+(i+1)+": "+servo[i]+", ");
-//		}
-//		System.out.println();
-//	}
-		
-//	private void registraServoOutPut(msg_servo_output_raw mensaje) {
-//		int servo[] = {
-//				mensaje.servo1_raw,
-//				mensaje.servo2_raw,
-//				mensaje.servo3_raw,
-//				mensaje.servo4_raw,
-//				mensaje.servo5_raw,
-//				mensaje.servo6_raw
-//		};
-//		dron.setServo(servo);
-//	}
-	
-
 	private void printRcChanelsRaw(msg_rc_channels_raw mensaje) {
 		long time = System.nanoTime();
 		
@@ -288,16 +239,6 @@ public class Listener extends Thread {
 			}
 		}
 	}
-
-//	private void registraRcChanelsRaw(msg_rc_channels_raw mensaje) {
-//		int channel[] = {
-//				mensaje.chan1_raw,
-//				mensaje.chan2_raw,
-//				mensaje.chan3_raw,
-//				mensaje.chan4_raw
-//		};
-//		dron.setChannel(channel);
-//	}
 	
 	private void processMode(msg_heartbeat msg) {
 		//System.out.println(Parametros.simStatus.name() + "-" + msg.base_mode);
@@ -311,50 +252,7 @@ public class Listener extends Thread {
 			Parametros.simStatus = Status.END;
 			//System.out.println("Statuts: "+Parametros.simStatus);
 		}
-		
-		
-		
-//		msg_heartbeat message = msg;
-//		Parametros.Mode prevMode = Parametros.flightMode;
-//		// Only process when flight mode changes
-//		if (prevMode == null || prevMode.getBaseMode() != message.base_mode || prevMode.getCustomMode() != message.custom_mode) {
-//			Parametros.Mode mode = Parametros.Mode.getMode(message.base_mode, message.custom_mode);
-//			if (mode != null) {
-//				Parametros.flightMode=mode;
-//				System.out.println("Modo vuelo: "+Parametros.flightMode.getMode());
-//				//SimTools.updateUAVMAVMode(numUAV, mode.getMode());	// Also update the GUI
-//			} else {
-//				System.out.println("Modo vuelo: Error!!");
-//				//System.out.println(Text.FLIGHT_MODE_ERROR_2 + "(" + message.base_mode + "," + message.custom_mode + ")");
-//			}
-//		}
-		// Detect when the UAV has connected (first heartbeat received)
-		/*if (!this.uavConnected) {
-			UAVParam.numMAVLinksOnline.incrementAndGet();
-			this.uavConnected = true;
-		}*/
 	}
-	
-	
-	/*private void processMode(msg_heartbeat msg) {
-		msg_heartbeat message = msg;
-		Parametros.Mode prevMode = Parametros.Mode.getMode();
-		// Only process when flight mode changes
-		if (prevMode == null || prevMode.getBaseMode() != message.base_mode || prevMode.getCustomMode() != message.custom_mode) {
-			Parametros.Mode mode = Parametros.Mode.getMode(message.base_mode, message.custom_mode);
-			if (mode != null) {
-				Parametros.flightMode.set(numUAV, mode);
-				SimTools.updateUAVMAVMode(numUAV, mode.getMode());	// Also update the GUI
-			} else {
-				SimTools.println(SimParam.prefix[numUAV] + Text.FLIGHT_MODE_ERROR_2 + "(" + message.base_mode + "," + message.custom_mode + ")");
-			}
-		}
-		// Detect when the UAV has connected (first heartbeat received)
-		if (!this.uavConnected) {
-			UAVParam.numMAVLinksOnline.incrementAndGet();
-			this.uavConnected = true;
-		}
-	}*/
 	
 	public void abrirEscritura(String fileLogsMsg) {
 		bfwriter = null;
@@ -370,31 +268,6 @@ public class Listener extends Thread {
 			e.printStackTrace();
 		}
 	}
-	
-
-//	public void escribirBuffer() {
-//		
-//		if (bfwriter != null) {
-//			// Línea de buffer
-//			String line = "";
-//				if (channel_flag) {
-//					line+="Channels: ";
-//					for (int i = 0; i < channel.length; i++) {
-//						line+="\tCh " + (i + 1) + ": " + channel[i] + ", ";
-//					}
-//					line+="\n";
-//				}
-//				if (z_flag) {
-//					line+="Z: "+z+"\tZRelat: "+zRelative+"\n";
-//				}
-//			try {
-//				bfwriter.write(line);
-//				bfwriter.newLine();
-//			} catch (IOException e1) {
-//				e1.printStackTrace();
-//			}
-//		}
-//	}
 	
 	public void cerrarBuffer() {
 		try{

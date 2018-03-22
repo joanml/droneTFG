@@ -1,7 +1,5 @@
 package logica;
 
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
 import org.mavlink.messages.MAV_MODE_FLAG;
 
 
