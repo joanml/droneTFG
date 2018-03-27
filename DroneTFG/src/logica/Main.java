@@ -2,7 +2,7 @@ package logica;
 
 
 public class Main {
-
+	
 	//public static UAVCurrentData dron = new UAVCurrentData();
 
 	public static String serialPort = "/dev/ttyAMA0";
@@ -13,4 +13,8 @@ public class Main {
 		Listener t = new Listener();
 		t.start();
 	}
+	
+	
+	
+
 }
